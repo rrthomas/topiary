@@ -70,39 +70,44 @@ async fn input_output_tester() {
 #[test(tokio::test)]
 async fn formatted_query_tester() {
     let config = Configuration::parse_default_configuration().unwrap();
-    let language_dir = fs::read_dir("../languages").unwrap();
+    let languages_dir = fs::read_dir("../languages").unwrap();
 
-    for file in language_dir {
-        let file = file.unwrap();
-        let language = Language::detect(file.path(), &config).unwrap();
+    for language_dir in languages_dir {
+        let language_dir_path = language_dir.unwrap().path();
+        if language_dir_path.is_dir() {
+            for file in fs::read_dir(language_dir_path).unwrap() {
+                let file = file.unwrap();
+                let language = Language::detect(file.path(), &config).unwrap();
 
-        let expected = fs::read_to_string(file.path()).unwrap();
+                let expected = fs::read_to_string(file.path()).unwrap();
 
-        let mut input = BufReader::new(fs::File::open(file.path()).unwrap());
-        let mut output = Vec::new();
-        let query_content = fs::read_to_string(language.query_file().unwrap()).unwrap();
+                let mut input = BufReader::new(fs::File::open(file.path()).unwrap());
+                let mut output = Vec::new();
+                let query_content = fs::read_to_string(language.query_file().unwrap()).unwrap();
 
-        let grammar = language.grammar().await.unwrap();
+                let grammar = language.grammar().await.unwrap();
 
-        let query = TopiaryQuery::new(&grammar, &query_content).unwrap();
+                let query = TopiaryQuery::new(&grammar, &query_content).unwrap();
 
-        formatter(
-            &mut input,
-            &mut output,
-            &query,
-            language,
-            &grammar,
-            Operation::Format {
-                skip_idempotence: false,
-                tolerate_parsing_errors: false,
-            },
-        )
-        .unwrap();
+                formatter(
+                    &mut input,
+                    &mut output,
+                    &query,
+                    language,
+                    &grammar,
+                    Operation::Format {
+                        skip_idempotence: false,
+                        tolerate_parsing_errors: false,
+                    },
+                )
+                .unwrap();
 
-        let formatted = String::from_utf8(output).unwrap();
-        log::debug!("{}", formatted);
+                let formatted = String::from_utf8(output).unwrap();
+                log::debug!("{}", formatted);
 
-        pretty_assert_eq(&expected, &formatted);
+                pretty_assert_eq(&expected, &formatted);
+            }
+        }
     }
 }
 

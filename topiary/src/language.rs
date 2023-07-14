@@ -119,7 +119,7 @@ impl TryFrom<&Language> for PathBuf {
     type Error = FormatterError;
 
     fn try_from(language: &Language) -> FormatterResult<Self> {
-        let basename = Self::from(match language.name.as_str() {
+        let basename = String::from(match language.name.as_str() {
             "bash" => "bash",
             "json" => "json",
             "nickel" => "nickel",
@@ -129,8 +129,7 @@ impl TryFrom<&Language> for PathBuf {
             "toml" => "toml",
             "tree_sitter_query" => "tree-sitter-query",
             name => return Err(FormatterError::UnsupportedLanguage(name.to_string())),
-        })
-        .with_extension("scm");
+        });
 
         #[rustfmt::skip]
         let potentials: [Option<Self>; 4] = [
@@ -143,7 +142,7 @@ impl TryFrom<&Language> for PathBuf {
         potentials
             .into_iter()
             .flatten()
-            .map(|path| path.join(&basename))
+            .map(|path| path.join(format!("{basename}/formatting.scm")))
             .find(|path| path.exists())
             .ok_or_else(|| {
                 FormatterError::Io(IoError::Filesystem(
@@ -158,7 +157,7 @@ impl TryFrom<&Language> for PathBuf {
 /// This enum is an enumeration of those we (the maintainers) are comfortable in
 /// calling "supported".
 /// Any other entries in crate::Language are experimental and won't be
-/// exposed in the CLI. They can be accessed using --query language/foo.scm
+/// exposed in the CLI. They can be accessed using --query language/foo/formatting.scm
 /// instead.
 #[derive(Clone, Copy, Debug, ValueEnum)]
 pub enum SupportedLanguage {
