@@ -81,10 +81,10 @@ async fn format_inner(
                 &query_state.query,
                 &query_state.language,
                 &query_state.grammar,
-                Operation::Format {
+                Operation::Format(FormatConfiguration {
                     skip_idempotence: !check_idempotence,
                     tolerate_parsing_errors,
-                },
+                }),
             )?;
 
             Ok(String::from_utf8(output)?)

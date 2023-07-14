@@ -20,7 +20,9 @@ use crate::{
     output::OutputFile,
     visualise::Visualisation,
 };
-use topiary::{formatter, Language, Operation, SupportedLanguage, TopiaryQuery};
+use topiary::{
+    formatter, FormatConfiguration, Language, Operation, SupportedLanguage, TopiaryQuery,
+};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -224,10 +226,10 @@ async fn run() -> CLIResult<()> {
             output_format: visualisation.into(),
         }
     } else {
-        Operation::Format {
+        Operation::Format(FormatConfiguration {
             skip_idempotence: args.skip_idempotence,
             tolerate_parsing_errors: args.tolerate_parsing_errors,
-        }
+        })
     };
 
     let tasks: Vec<_> = fmt_args

@@ -129,19 +129,22 @@ pub enum ScopeCondition {
 /// A convenience wrapper around `std::result::Result<T, FormatterError>`.
 pub type FormatterResult<T> = std::result::Result<T, FormatterError>;
 
+#[derive(Clone, Copy, Debug)]
+pub struct FormatConfiguration {
+    /// If true, skips the idempotence check (where we format twice,
+    /// succeeding only if the intermediate and final result are identical)
+    pub skip_idempotence: bool,
+    /// If true, Topiary will consider an ERROR as it does a leaf node,
+    /// and continues formatting instead of exiting with an error
+    pub tolerate_parsing_errors: bool,
+}
+
 /// Operations that can be performed by the formatter.
 #[derive(Clone, Copy, Debug)]
 pub enum Operation {
     /// Formatting is the default operation of the formatter, it applies the
     /// formatting rules defined in the query file and outputs the result
-    Format {
-        /// If true, skips the idempotence check (where we format twice,
-        /// succeeding only if the intermediate and final result are identical)
-        skip_idempotence: bool,
-        /// If true, Topiary will consider an ERROR as it does a leaf node,
-        /// and continues formatting instead of exiting with an error
-        tolerate_parsing_errors: bool,
-    },
+    Format(FormatConfiguration),
     /// Visualises the parsed file's tree-sitter tree
     Visualise {
         /// Choose the type of visualation Topiary should ouput
@@ -161,7 +164,7 @@ pub enum Operation {
 /// # tokio_test::block_on(async {
 /// use std::fs::File;
 /// use std::io::{BufReader, Read};
-/// use topiary::{formatter, Configuration, FormatterError, TopiaryQuery, Operation};
+/// use topiary::{formatter, Configuration, FormatterError, TopiaryQuery, Operation, FormatConfiguration};
 ///
 /// let input = "[1,2]".to_string();
 /// let mut input = input.as_bytes();
@@ -178,7 +181,7 @@ pub enum Operation {
 ///     .expect("grammar");
 /// let query = TopiaryQuery::new(&grammar, &query_content).unwrap();
 ///
-/// match formatter(&mut input, &mut output, &query, &language, &grammar, Operation::Format{ skip_idempotence: false, tolerate_parsing_errors: false }) {
+/// match formatter(&mut input, &mut output, &query, &language, &grammar, Operation::Format(FormatConfiguration { skip_idempotence: false, tolerate_parsing_errors: false })) {
 ///   Ok(()) => {
 ///     let formatted = String::from_utf8(output).expect("valid utf-8");
 ///   }
@@ -207,10 +210,10 @@ pub fn formatter(
     })?;
 
     match operation {
-        Operation::Format {
+        Operation::Format(FormatConfiguration {
             skip_idempotence,
             tolerate_parsing_errors,
-        } => {
+        }) => {
             // All the work related to tree-sitter and the query is done here
             log::info!("Apply Tree-sitter query");
 
@@ -291,10 +294,10 @@ fn idempotence_check(
         query,
         language,
         grammar,
-        Operation::Format {
+        Operation::Format(FormatConfiguration {
             skip_idempotence: true,
             tolerate_parsing_errors,
-        },
+        }),
     ) {
         Ok(()) => {
             let reformatted = String::from_utf8(output.into_inner()?)?;
@@ -322,7 +325,7 @@ mod tests {
 
     use crate::{
         configuration::Configuration, error::FormatterError, formatter,
-        test_utils::pretty_assert_eq, Operation, TopiaryQuery,
+        test_utils::pretty_assert_eq, FormatConfiguration, Operation, TopiaryQuery,
     };
 
     /// Attempt to parse invalid json, expecting a failure
@@ -342,10 +345,10 @@ mod tests {
             &query,
             language,
             &grammar,
-            Operation::Format {
+            Operation::Format(FormatConfiguration {
                 skip_idempotence: true,
                 tolerate_parsing_errors: false,
-            },
+            }),
         ) {
             Err(FormatterError::Parsing {
                 start_line: 1,
@@ -377,10 +380,10 @@ mod tests {
             &query,
             language,
             &grammar,
-            Operation::Format {
+            Operation::Format(FormatConfiguration {
                 skip_idempotence: true,
                 tolerate_parsing_errors: true,
-            },
+            }),
         )
         .unwrap();
 

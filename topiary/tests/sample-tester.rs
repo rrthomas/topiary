@@ -6,8 +6,8 @@ use log::info;
 use test_log::test;
 
 use topiary::{
-    apply_query, formatter, test_utils::pretty_assert_eq, Configuration, FormatterError, Language,
-    Operation, TopiaryQuery,
+    apply_query, formatter, test_utils::pretty_assert_eq, Configuration, FormatConfiguration,
+    FormatterError, Language, Operation, TopiaryQuery,
 };
 
 #[test(tokio::test)]
@@ -51,10 +51,10 @@ async fn input_output_tester() {
                 &query,
                 language,
                 &grammar,
-                Operation::Format {
+                Operation::Format(FormatConfiguration {
                     skip_idempotence: false,
                     tolerate_parsing_errors: true,
-                },
+                }),
             )
             .unwrap();
 
@@ -95,10 +95,10 @@ async fn formatted_query_tester() {
                     &query,
                     language,
                     &grammar,
-                    Operation::Format {
+                    Operation::Format(FormatConfiguration {
                         skip_idempotence: false,
                         tolerate_parsing_errors: false,
-                    },
+                    }),
                 )
                 .unwrap();
 

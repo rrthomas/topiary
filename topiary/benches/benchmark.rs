@@ -2,7 +2,7 @@ use criterion::async_executor::FuturesExecutor;
 use criterion::{criterion_group, criterion_main, Criterion};
 use std::fs;
 use std::io;
-use topiary::{formatter, Operation};
+use topiary::{formatter, FormatConfiguration, Operation};
 use topiary::{Configuration, TopiaryQuery};
 
 async fn format() {
@@ -22,10 +22,10 @@ async fn format() {
         &query,
         language,
         &grammar,
-        Operation::Format {
+        Operation::Format(FormatConfiguration {
             skip_idempotence: true,
             tolerate_parsing_errors: false,
-        },
+        }),
     )
     .unwrap();
 }

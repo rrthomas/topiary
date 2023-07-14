@@ -17,10 +17,10 @@ async fn main() {
         &query,
         &language,
         &grammar,
-        Operation::Format {
+        Operation::Format(FormatConfiguration {
             skip_idempotence: false,
             tolerate_parsing_errors: false,
-        },
+        }),
     )
     .expect("formatter");
 
