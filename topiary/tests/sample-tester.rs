@@ -7,7 +7,7 @@ use test_log::test;
 
 use topiary::{
     apply_query, formatter, test_utils::pretty_assert_eq, Configuration, FormatConfiguration,
-    FormatterError, Language, Operation, TopiaryQuery,
+    FormatterError, Language, Operation, TopiaryQueries,
 };
 
 #[test(tokio::test)]
@@ -35,7 +35,7 @@ async fn input_output_tester() {
 
             let grammar = language.grammar().await.unwrap();
 
-            let query = TopiaryQuery::new(&grammar, &query_content).unwrap();
+            let query = TopiaryQueries::new(&grammar, &query_content, None).unwrap();
 
             info!(
                 "Formatting file {} as {}.",
@@ -87,7 +87,7 @@ async fn formatted_query_tester() {
 
                 let grammar = language.grammar().await.unwrap();
 
-                let query = TopiaryQuery::new(&grammar, &query_content).unwrap();
+                let query = TopiaryQueries::new(&grammar, &query_content, None).unwrap();
 
                 formatter(
                     &mut input,
@@ -131,7 +131,7 @@ async fn exhaustive_query_tester() {
 
         let grammar = language.grammar().await.unwrap();
 
-        let query = TopiaryQuery::new(&grammar, &query_content).unwrap();
+        let query = TopiaryQueries::new(&grammar, &query_content, None).unwrap();
 
         apply_query(&input_content, &query, &grammar, false, true).unwrap_or_else(|e| {
             if let FormatterError::PatternDoesNotMatch(_) = e {

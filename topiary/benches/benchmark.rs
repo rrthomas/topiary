@@ -3,7 +3,7 @@ use criterion::{criterion_group, criterion_main, Criterion};
 use std::fs;
 use std::io;
 use topiary::{formatter, FormatConfiguration, Operation};
-use topiary::{Configuration, TopiaryQuery};
+use topiary::{Configuration, TopiaryQueries};
 
 async fn format() {
     let input = fs::read_to_string("tests/samples/input/ocaml.ml").unwrap();
@@ -11,7 +11,7 @@ async fn format() {
     let configuration = Configuration::parse_default_configuration().unwrap();
     let language = configuration.get_language("ocaml").unwrap();
     let grammar = language.grammar().await.unwrap();
-    let query = TopiaryQuery::new(&grammar, &query_content).unwrap();
+    let query = TopiaryQueries::new(&grammar, &query_content, None).unwrap();
 
     let mut input = input.as_bytes();
     let mut output = io::BufWriter::new(Vec::new());

@@ -1,7 +1,7 @@
 #[cfg(target_arch = "wasm32")]
 use std::sync::Mutex;
 #[cfg(target_arch = "wasm32")]
-use topiary::{formatter, Configuration, FormatterResult, Language, Operation, TopiaryQuery};
+use topiary::{formatter, Configuration, FormatterResult, Language, Operation, TopiaryQueries};
 #[cfg(target_arch = "wasm32")]
 use tree_sitter_facade::TreeSitter;
 #[cfg(target_arch = "wasm32")]

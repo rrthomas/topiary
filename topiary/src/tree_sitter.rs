@@ -35,7 +35,26 @@ pub struct TopiaryQuery {
     pub query_content: String,
 }
 
+pub struct TopiaryQueries {
+    pub highlight: TopiaryQuery,
+    pub injections: Option<TopiaryQuery>,
+}
+
 impl TopiaryQuery {
+    pub fn new(
+        grammar: &tree_sitter_facade::Language,
+        query_content: &str,
+    ) -> FormatterResult<TopiaryQuery> {
+        let query = Query::new(grammar, query_content)
+            .map_err(|e| FormatterError::Query("Error parsing query file".into(), Some(e)))?;
+        Ok(Self {
+            query,
+            query_content: query_content.to_owned(),
+        })
+    }
+}
+
+impl TopiaryQueries {
     /// Creates a new `TopiaryQuery` from a tree-sitter language/grammar and the
     /// contents of the query file.
     ///
@@ -45,43 +64,50 @@ impl TopiaryQuery {
     /// query file.
     pub fn new(
         grammar: &tree_sitter_facade::Language,
-        query_content: &str,
-    ) -> FormatterResult<TopiaryQuery> {
-        let query = Query::new(grammar, query_content)
-            .map_err(|e| FormatterError::Query("Error parsing query file".into(), Some(e)))?;
+        highlight_query_content: &str,
+        injection_query_content: Option<&str>,
+    ) -> FormatterResult<TopiaryQueries> {
+        let highlight = TopiaryQuery::new(grammar, highlight_query_content)?;
 
-        Ok(TopiaryQuery {
-            query,
-            query_content: query_content.to_owned(),
+        let injections = injection_query_content
+            .map(|c| TopiaryQuery::new(grammar, c))
+            .transpose()?;
+
+        Ok(TopiaryQueries {
+            highlight,
+            injections,
         })
     }
 
     /// Creates a new `TopiaryQuery` using the built-in Bash query file.
     #[cfg(not(target_arch = "wasm32"))]
-    pub fn bash() -> TopiaryQuery {
+    pub fn bash() -> TopiaryQueries {
         Self::new(
             &tree_sitter_bash::language().into(),
             include_str!("../languages/bash/formatting.scm"),
+            None,
         )
         .expect("parsing built-in query")
     }
 
     /// Creates a new `TopiaryQuery` using the built-in Json query file.
     #[cfg(not(target_arch = "wasm32"))]
-    pub fn json() -> TopiaryQuery {
+    pub fn json() -> TopiaryQueries {
         Self::new(
             &tree_sitter_json::language().into(),
             include_str!("../languages/json/formatting.scm"),
+            None,
         )
         .expect("parsing built-in query")
     }
 
     /// Creates a new `TopiaryQuery` using the built-in Nickel query file.
     #[cfg(not(target_arch = "wasm32"))]
-    pub fn nickel() -> TopiaryQuery {
+    pub fn nickel() -> TopiaryQueries {
         Self::new(
             &tree_sitter_nickel::language().into(),
             include_str!("../languages/nickel/formatting.scm"),
+            None,
         )
         .expect("parsing built-in query")
     }
@@ -89,10 +115,11 @@ impl TopiaryQuery {
     /// Creates a new `TopiaryQuery` for Ocaml using the built-in Ocaml query
     /// file.
     #[cfg(not(target_arch = "wasm32"))]
-    pub fn ocaml() -> TopiaryQuery {
+    pub fn ocaml() -> TopiaryQueries {
         Self::new(
             &tree_sitter_ocaml::language_ocaml().into(),
             include_str!("../languages/ocaml/formatting.scm"),
+            None,
         )
         .expect("parsing built-in query")
     }
@@ -100,10 +127,11 @@ impl TopiaryQuery {
     /// Creates a new `TopiaryQuery` for Ocaml interface using the built-in
     /// Ocaml query file.
     #[cfg(not(target_arch = "wasm32"))]
-    pub fn ocaml_interface() -> TopiaryQuery {
+    pub fn ocaml_interface() -> TopiaryQueries {
         Self::new(
             &tree_sitter_ocaml::language_ocaml_interface().into(),
             include_str!("../languages/ocaml/formatting.scm"),
+            None,
         )
         .expect("parsing built-in query")
     }
@@ -111,30 +139,33 @@ impl TopiaryQuery {
     /// Creates a new `TopiaryQuery` for Ocamllex using the built-in Ocamllex query
     /// file.
     #[cfg(not(target_arch = "wasm32"))]
-    pub fn ocamllex() -> TopiaryQuery {
+    pub fn ocamllex() -> TopiaryQueries {
         Self::new(
             &tree_sitter_ocamllex::language().into(),
             include_str!("../languages/ocamllex/formatting.scm"),
+            None,
         )
         .expect("parsing built-in query")
     }
 
     /// Creates a new `TopiaryQuery` using the built-in Rust query file.
     #[cfg(not(target_arch = "wasm32"))]
-    pub fn rust() -> TopiaryQuery {
+    pub fn rust() -> TopiaryQueries {
         Self::new(
             &tree_sitter_rust::language().into(),
             include_str!("../languages/rust/formatting.scm"),
+            None,
         )
         .expect("parsing built-in query")
     }
 
     /// Creates a new `TopiaryQuery` using the built-in Toml query file.
     #[cfg(not(target_arch = "wasm32"))]
-    pub fn toml() -> TopiaryQuery {
+    pub fn toml() -> TopiaryQueries {
         Self::new(
             &tree_sitter_toml::language().into(),
             include_str!("../languages/toml/formatting.scm"),
+            None,
         )
         .expect("parsing built-in query")
     }
@@ -142,30 +173,31 @@ impl TopiaryQuery {
     /// Creates a new `TopiaryQuery` using the built-in query file for the
     /// Tree-sitter query language.
     #[cfg(not(target_arch = "wasm32"))]
-    pub fn tree_sitter_query() -> TopiaryQuery {
+    pub fn tree_sitter_query() -> TopiaryQueries {
         Self::new(
             &tree_sitter_query::language().into(),
             include_str!("../languages/tree-sitter-query/formatting.scm"),
+            None,
         )
         .expect("parsing built-in query")
     }
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-impl TryFrom<&crate::Language> for TopiaryQuery {
+impl TryFrom<&crate::Language> for TopiaryQueries {
     type Error = FormatterError;
 
     fn try_from(language: &crate::Language) -> FormatterResult<Self> {
         match language.name.as_str() {
-            "bash" => Ok(TopiaryQuery::bash()),
-            "json" => Ok(TopiaryQuery::json()),
-            "nickel" => Ok(TopiaryQuery::nickel()),
-            "ocaml" => Ok(TopiaryQuery::ocaml()),
-            "ocaml_interface" => Ok(TopiaryQuery::ocaml_interface()),
-            "ocamllex" => Ok(TopiaryQuery::ocamllex()),
-            "rust" => Ok(TopiaryQuery::rust()),
-            "toml" => Ok(TopiaryQuery::toml()),
-            "tree_sitter_query" => Ok(TopiaryQuery::tree_sitter_query()),
+            "bash" => Ok(TopiaryQueries::bash()),
+            "json" => Ok(TopiaryQueries::json()),
+            "nickel" => Ok(TopiaryQueries::nickel()),
+            "ocaml" => Ok(TopiaryQueries::ocaml()),
+            "ocaml_interface" => Ok(TopiaryQueries::ocaml_interface()),
+            "ocamllex" => Ok(TopiaryQueries::ocamllex()),
+            "rust" => Ok(TopiaryQueries::rust()),
+            "toml" => Ok(TopiaryQueries::toml()),
+            "tree_sitter_query" => Ok(TopiaryQueries::tree_sitter_query()),
             name => Err(FormatterError::UnsupportedLanguage(name.to_string())),
         }
     }
@@ -238,7 +270,7 @@ struct LocalQueryMatch<'a> {
 /// - A unknown capture name was encountered in the query.
 pub fn apply_query(
     input_content: &str,
-    query: &TopiaryQuery,
+    query: &TopiaryQueries,
     grammar: &tree_sitter_facade::Language,
     tolerate_parsing_errors: bool,
     should_check_input_exhaustivity: bool,
@@ -250,9 +282,9 @@ pub fn apply_query(
     // Match queries
     let mut cursor = QueryCursor::new();
     let mut matches: Vec<LocalQueryMatch> = Vec::new();
-    let capture_names = query.query.capture_names();
+    let capture_names = query.highlight.query.capture_names();
 
-    for query_match in query.query.matches(&root, source, &mut cursor) {
+    for query_match in query.highlight.query.matches(&root, source, &mut cursor) {
         let local_captures: Vec<QueryCapture> = query_match.captures().collect();
 
         matches.push(LocalQueryMatch {
@@ -289,7 +321,7 @@ pub fn apply_query(
 
         let mut predicates = QueryPredicates::default();
 
-        for p in query.query.general_predicates(m.pattern_index) {
+        for p in query.highlight.query.general_predicates(m.pattern_index) {
             predicates = handle_predicate(&p, &predicates)?;
         }
         check_predicates(&predicates)?;
@@ -499,13 +531,13 @@ fn check_predicates(predicates: &QueryPredicates) -> FormatterResult<()> {
 /// then that pattern originally matched nothing in the input.
 fn check_input_exhaustivity(
     ref_match_count: usize,
-    original_query: &TopiaryQuery,
+    original_query: &TopiaryQueries,
     grammar: &tree_sitter_facade::Language,
     root: &Node,
     source: &[u8],
 ) -> FormatterResult<()> {
-    let pattern_count = original_query.query.pattern_count();
-    let query_content = &original_query.query_content;
+    let pattern_count = original_query.highlight.query.pattern_count();
+    let query_content = &original_query.highlight.query_content;
     // This particular test avoids a SIGSEGV error that occurs when trying
     // to count the matches of an empty query (see #481)
     if pattern_count == 1 {
@@ -541,7 +573,7 @@ fn check_input_exhaustivity(
 #[cfg(target_arch = "wasm32")]
 fn check_input_exhaustivity(
     _ref_match_count: usize,
-    _original_query: &TopiaryQuery,
+    _original_query: &TopiaryQueries,
     _grammar: &tree_sitter_facade::Language,
     _root: &Node,
     _source: &[u8],

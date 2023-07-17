@@ -21,7 +21,7 @@ use crate::{
     visualise::Visualisation,
 };
 use topiary::{
-    formatter, FormatConfiguration, Language, Operation, SupportedLanguage, TopiaryQuery,
+    formatter, FormatConfiguration, Language, Operation, SupportedLanguage, TopiaryQueries,
 };
 
 #[derive(Parser, Debug)]
@@ -178,7 +178,7 @@ async fn run() -> CLIResult<()> {
 
     // Converts the simple types into arguments we can pass to the `formatter` function
     // _ holds the tree_sitter_facade::Language
-    let fmt_args: Vec<(String, String, Language, _, TopiaryQuery)> =
+    let fmt_args: Vec<(String, String, Language, _, TopiaryQueries)> =
         futures::future::try_join_all(io_files.into_iter().map(
             |(i, o, language, query_arg, query_path)| async move {
                 let grammar = language.grammar().await?;
@@ -199,7 +199,7 @@ async fn run() -> CLIResult<()> {
                         })
                     })
                     .and_then(|query_content: String| {
-                        Ok(TopiaryQuery::new(&grammar, &query_content)?)
+                        Ok(TopiaryQueries::new(&grammar, &query_content, None)?)
                     })
                     .or_else(|e| {
                         // If we weren't able to read the query file, and the user didn't

@@ -20,7 +20,7 @@ pub use crate::{
     configuration::{default_configuration_toml, Configuration},
     error::{FormatterError, IoError},
     language::{Language, SupportedLanguage},
-    tree_sitter::{apply_query, SyntaxNode, TopiaryQuery, Visualisation},
+    tree_sitter::{apply_query, SyntaxNode, TopiaryQueries, Visualisation},
 };
 
 mod atom_collection;
@@ -164,7 +164,7 @@ pub enum Operation {
 /// # tokio_test::block_on(async {
 /// use std::fs::File;
 /// use std::io::{BufReader, Read};
-/// use topiary::{formatter, Configuration, FormatterError, TopiaryQuery, Operation, FormatConfiguration};
+/// use topiary::{formatter, Configuration, FormatterError, TopiaryQueries, Operation, FormatConfiguration};
 ///
 /// let input = "[1,2]".to_string();
 /// let mut input = input.as_bytes();
@@ -179,7 +179,7 @@ pub enum Operation {
 ///     .grammar()
 ///     .await
 ///     .expect("grammar");
-/// let query = TopiaryQuery::new(&grammar, &query_content).unwrap();
+/// let query = TopiaryQueries::new(&grammar, &query_content, None).unwrap();
 ///
 /// match formatter(&mut input, &mut output, &query, &language, &grammar, Operation::Format(FormatConfiguration { skip_idempotence: false, tolerate_parsing_errors: false })) {
 ///   Ok(()) => {
@@ -197,7 +197,7 @@ pub enum Operation {
 pub fn formatter(
     input: &mut impl io::Read,
     output: &mut impl io::Write,
-    query: &TopiaryQuery,
+    query: &TopiaryQueries,
     language: &Language,
     grammar: &tree_sitter_facade::Language,
     operation: Operation,
@@ -232,7 +232,7 @@ pub fn formatter(
 
 pub fn format(
     input: &String,
-    query: &TopiaryQuery,
+    query: &TopiaryQueries,
     language: &Language,
     grammar: &tree_sitter_facade::Language,
     format_configuration: FormatConfiguration,
@@ -292,7 +292,7 @@ fn trim_whitespace(s: &str) -> String {
 /// `Err(FormatterError::Formatting(...))` if the formatting failed
 fn idempotence_check(
     content: &str,
-    query: &TopiaryQuery,
+    query: &TopiaryQueries,
     language: &Language,
     grammar: &tree_sitter_facade::Language,
     tolerate_parsing_errors: bool,
@@ -339,7 +339,7 @@ mod tests {
 
     use crate::{
         configuration::Configuration, error::FormatterError, formatter,
-        test_utils::pretty_assert_eq, FormatConfiguration, Operation, TopiaryQuery,
+        test_utils::pretty_assert_eq, FormatConfiguration, Operation, TopiaryQueries,
     };
 
     /// Attempt to parse invalid json, expecting a failure
@@ -351,7 +351,7 @@ mod tests {
         let configuration = Configuration::parse_default_configuration().unwrap();
         let language = configuration.get_language("json").unwrap();
         let grammar = language.grammar().await.unwrap();
-        let query = TopiaryQuery::new(&grammar, query_content).unwrap();
+        let query = TopiaryQueries::new(&grammar, query_content, None).unwrap();
 
         match formatter(
             &mut input,
@@ -386,7 +386,7 @@ mod tests {
         let configuration = Configuration::parse_default_configuration().unwrap();
         let language = configuration.get_language("json").unwrap();
         let grammar = language.grammar().await.unwrap();
-        let query = TopiaryQuery::new(&grammar, &query_content).unwrap();
+        let query = TopiaryQueries::new(&grammar, &query_content, None).unwrap();
 
         formatter(
             &mut input,
