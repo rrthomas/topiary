@@ -271,11 +271,10 @@ struct LocalQueryMatch<'a> {
 pub fn apply_query(
     input_content: &str,
     query: &TopiaryQueries,
+    tree: &Tree,
     grammar: &tree_sitter_facade::Language,
-    tolerate_parsing_errors: bool,
     should_check_input_exhaustivity: bool,
 ) -> FormatterResult<AtomCollection> {
-    let (tree, grammar) = parse(input_content, grammar, tolerate_parsing_errors)?;
     let root = tree.root_node();
     let source = input_content.as_bytes();
 

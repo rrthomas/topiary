@@ -20,7 +20,7 @@ pub use crate::{
     configuration::{default_configuration_toml, Configuration},
     error::{FormatterError, IoError},
     language::{Language, SupportedLanguage},
-    tree_sitter::{apply_query, SyntaxNode, TopiaryQueries, Visualisation},
+    tree_sitter::{apply_query, parse, SyntaxNode, TopiaryQueries, Visualisation},
 };
 
 mod atom_collection;
@@ -245,8 +245,9 @@ pub fn format(
     // All the work related to tree-sitter and the query is done here
     log::info!("Apply Tree-sitter query");
 
-    let mut atoms =
-        tree_sitter::apply_query(&input, query, grammar, tolerate_parsing_errors, false)?;
+    let (tree, grammar) = parse(input, grammar, tolerate_parsing_errors)?;
+
+    let mut atoms = tree_sitter::apply_query(&input, query, &tree, grammar, false)?;
 
     // Various post-processing of whitespace
     atoms.post_process();

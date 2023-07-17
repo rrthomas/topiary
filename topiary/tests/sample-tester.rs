@@ -6,8 +6,8 @@ use log::info;
 use test_log::test;
 
 use topiary::{
-    apply_query, formatter, test_utils::pretty_assert_eq, Configuration, FormatConfiguration,
-    FormatterError, Language, Operation, TopiaryQueries,
+    apply_query, formatter, parse, test_utils::pretty_assert_eq, Configuration,
+    FormatConfiguration, FormatterError, Language, Operation, TopiaryQueries,
 };
 
 #[test(tokio::test)]
@@ -133,7 +133,9 @@ async fn exhaustive_query_tester() {
 
         let query = TopiaryQueries::new(&grammar, &query_content, None).unwrap();
 
-        apply_query(&input_content, &query, &grammar, false, true).unwrap_or_else(|e| {
+        let (tree, grammar) = parse(&input_content, &grammar, false).unwrap();
+
+        apply_query(&input_content, &query, &tree, &grammar, true).unwrap_or_else(|e| {
             if let FormatterError::PatternDoesNotMatch(_) = e {
                 panic!("Found untested query in file {query_file:?}:\n{e}");
             } else {
