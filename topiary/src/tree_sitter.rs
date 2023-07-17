@@ -143,7 +143,7 @@ impl TopiaryQueries {
         Self::new(
             &tree_sitter_ocamllex::language().into(),
             include_str!("../languages/ocamllex/formatting.scm"),
-            None,
+            Some(include_str!("../languages/ocamllex/injections.scm")),
         )
         .expect("parsing built-in query")
     }
