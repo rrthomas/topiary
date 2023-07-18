@@ -14,8 +14,8 @@ use topiary::{
 async fn input_output_tester() {
     let input_dir = fs::read_dir("tests/samples/input").unwrap();
     let expected_dir = Path::new("tests/samples/expected");
-    let config = Configuration::parse_default_configuration().unwrap();
-    let extensions = config.known_extensions();
+    let configuration = Configuration::parse_default_configuration().unwrap();
+    let extensions = configuration.known_extensions();
 
     for file in input_dir {
         let file = file.unwrap();
@@ -24,14 +24,14 @@ async fn input_output_tester() {
                 continue;
             }
 
-            let language = Language::detect(file.path(), &config).unwrap();
+            let language = Language::detect(file.path(), &configuration).unwrap();
 
             let expected_path = expected_dir.join(file.file_name());
             let expected = fs::read_to_string(expected_path).unwrap();
 
             let mut input = BufReader::new(fs::File::open(file.path()).unwrap());
             let mut output = Vec::new();
-            let query_content = fs::read_to_string(language.query_file().unwrap()).unwrap();
+            let query_content = fs::read_to_string(language.query_files().unwrap().0).unwrap();
 
             let grammar = language.grammar().await.unwrap();
 
@@ -55,6 +55,7 @@ async fn input_output_tester() {
                     skip_idempotence: false,
                     tolerate_parsing_errors: true,
                 }),
+                &configuration,
             )
             .unwrap();
 
@@ -69,7 +70,7 @@ async fn input_output_tester() {
 // Test that our query files are properly formatted
 #[test(tokio::test)]
 async fn formatted_query_tester() {
-    let config = Configuration::parse_default_configuration().unwrap();
+    let configuration = Configuration::parse_default_configuration().unwrap();
     let languages_dir = fs::read_dir("../languages").unwrap();
 
     for language_dir in languages_dir {
@@ -77,13 +78,13 @@ async fn formatted_query_tester() {
         if language_dir_path.is_dir() {
             for file in fs::read_dir(language_dir_path).unwrap() {
                 let file = file.unwrap();
-                let language = Language::detect(file.path(), &config).unwrap();
+                let language = Language::detect(file.path(), &configuration).unwrap();
 
                 let expected = fs::read_to_string(file.path()).unwrap();
 
                 let mut input = BufReader::new(fs::File::open(file.path()).unwrap());
                 let mut output = Vec::new();
-                let query_content = fs::read_to_string(language.query_file().unwrap()).unwrap();
+                let query_content = fs::read_to_string(language.query_files().unwrap().0).unwrap();
 
                 let grammar = language.grammar().await.unwrap();
 
@@ -99,6 +100,7 @@ async fn formatted_query_tester() {
                         skip_idempotence: false,
                         tolerate_parsing_errors: false,
                     }),
+                    &configuration,
                 )
                 .unwrap();
 
@@ -124,7 +126,7 @@ async fn exhaustive_query_tester() {
             continue;
         }
         let language = Language::detect(file.path(), &config).unwrap();
-        let query_file = language.query_file().unwrap();
+        let query_file = language.query_files().unwrap().0;
 
         let input_content = fs::read_to_string(&file.path()).unwrap();
         let query_content = fs::read_to_string(&query_file).unwrap();

@@ -151,7 +151,8 @@ async fn run() -> CLIResult<()> {
         String,
         Language,
         Option<PathBuf>,
-        CLIResult<PathBuf>,
+        CLIResult<(PathBuf, Option<PathBuf>)>,
+        topiary::Configuration,
     );
 
     // Add the language and query Path to the io_files
@@ -165,60 +166,91 @@ async fn run() -> CLIResult<()> {
                 Language::detect(&i, &configuration)?.clone()
             };
 
-            let query_path = if let Some(query) = &args.query {
-                Ok(query.clone())
+            let query_paths = if let Some(query) = &args.query {
+                Ok((query.clone(), None))
             } else {
-                language.query_file()
+                language.query_files()
             }
             .map_err(TopiaryError::Lib);
 
-            Ok((i, o, language, args.query.clone(), query_path))
+            Ok((
+                i,
+                o,
+                language,
+                args.query.clone(),
+                query_paths,
+                // TODO: See if we can remove this clone
+                configuration.clone(),
+            ))
         })
         .collect::<CLIResult<Vec<_>>>()?;
 
     // Converts the simple types into arguments we can pass to the `formatter` function
     // _ holds the tree_sitter_facade::Language
-    let fmt_args: Vec<(String, String, Language, _, TopiaryQueries)> =
-        futures::future::try_join_all(io_files.into_iter().map(
-            |(i, o, language, query_arg, query_path)| async move {
-                let grammar = language.grammar().await?;
+    let fmt_args: Vec<(
+        String,
+        String,
+        Language,
+        _,
+        TopiaryQueries,
+        topiary::Configuration,
+    )> = futures::future::try_join_all(io_files.into_iter().map(
+        |(i, o, language, query_arg, query_paths, configuration)| async move {
+            let grammar = language.grammar().await?;
 
-                let query = query_path
-                    .and_then(|query_path| {
-                        {
-                            let mut reader = BufReader::new(File::open(query_path)?);
-                            let mut contents = String::new();
-                            reader.read_to_string(&mut contents)?;
-                            Ok(contents)
-                        }
-                        .map_err(|e| {
-                            TopiaryError::Bin(
-                                "Could not open query file".into(),
-                                Some(CLIError::IOError(e)),
-                            )
-                        })
-                    })
-                    .and_then(|query_content: String| {
-                        Ok(TopiaryQueries::new(&grammar, &query_content, None)?)
-                    })
-                    .or_else(|e| {
-                        // If we weren't able to read the query file, and the user didn't
-                        // request a specific query file, we should fall back to the built-in
-                        // queries.
-                        if query_arg.is_none() {
-                            log::info!(
-                                "No language file found for {language:?}. Will use built-in query."
-                            );
-                            Ok((&language).try_into()?)
-                        } else {
-                            Err(e)
-                        }
-                    })?;
+            let query = query_paths
+                .and_then(|query_paths| {
+                    {
+                        let mut reader = BufReader::new(File::open(query_paths.0)?);
+                        let mut contents = String::new();
+                        reader.read_to_string(&mut contents)?;
 
-                Ok::<_, TopiaryError>((i, o, language, grammar, query))
-            },
-        ))
-        .await?;
+                        let injection_content = query_paths
+                            .1
+                            .map(|path| -> Result<String, TopiaryError> {
+                                let mut reader = BufReader::new(File::open(path)?);
+                                let mut contents = String::new();
+                                reader.read_to_string(&mut contents)?;
+                                Ok(contents)
+                            })
+                            .transpose()?;
+
+                        Ok((contents, injection_content))
+                    }
+                    .map_err(|e| {
+                        TopiaryError::Bin(
+                            "Could not open query file".into(),
+                            Some(CLIError::IOError(e)),
+                        )
+                    })
+                })
+                .and_then(
+                    |(query_content, injection_content): (String, Option<String>)| {
+                        Ok(TopiaryQueries::new(
+                            &grammar,
+                            &query_content,
+                            injection_content.as_deref(),
+                        )?)
+                    },
+                )
+                .or_else(|e| {
+                    // If we weren't able to read the query file, and the user didn't
+                    // request a specific query file, we should fall back to the built-in
+                    // queries.
+                    if query_arg.is_none() {
+                        log::info!(
+                            "No language file found for {language:?}. Will use built-in query."
+                        );
+                        Ok((&language).try_into()?)
+                    } else {
+                        Err(e)
+                    }
+                })?;
+
+            Ok::<_, TopiaryError>((i, o, language, grammar, query, configuration))
+        },
+    ))
+    .await?;
 
     // The operation needs not be part of the Vector of Structs because it is the same for every formatting instance
     let operation = if let Some(visualisation) = args.visualise {
@@ -234,7 +266,7 @@ async fn run() -> CLIResult<()> {
 
     let tasks: Vec<_> = fmt_args
         .into_iter()
-        .map(|(input, output, language, grammar, query)| -> tokio::task::JoinHandle<Result<(), TopiaryError>> {
+        .map(|(input, output, language, grammar, query, configuration)| -> tokio::task::JoinHandle<Result<(), TopiaryError>> {
             tokio::spawn(async move {
                     let mut input: Box<dyn Read> = match input.as_str() {
                         "-" => Box::new(stdin()),
@@ -249,6 +281,7 @@ async fn run() -> CLIResult<()> {
                         &language,
                         &grammar,
                         operation,
+                        &configuration,
                     )?;
 
                     output.into_inner()?.persist()?;

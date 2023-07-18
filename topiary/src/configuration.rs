@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 /// Can be provided by the user of the library, or alternatively, Topiary ships with a default
 /// configuration that can be accessed using `default_configuration_toml` or
 /// `parse_default_configuration`.
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Configuration {
     pub language: Vec<Language>,
 }

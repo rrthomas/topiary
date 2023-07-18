@@ -10,7 +10,7 @@
 //! More details can be found on
 //! [GitHub](https://github.com/tweag/topiary).
 
-use std::io;
+use std::{io, println};
 
 use itertools::Itertools;
 use pretty_assertions::StrComparison;
@@ -201,6 +201,7 @@ pub fn formatter(
     language: &Language,
     grammar: &tree_sitter_facade::Language,
     operation: Operation,
+    configuration: &Configuration,
 ) -> FormatterResult<()> {
     let content = read_input(input).map_err(|e| {
         FormatterError::Io(IoError::Filesystem(
@@ -211,7 +212,14 @@ pub fn formatter(
 
     match operation {
         Operation::Format(format_configuration) => {
-            let formatted = format(&content, query, language, grammar, format_configuration)?;
+            let formatted = format(
+                &content,
+                query,
+                language,
+                grammar,
+                format_configuration,
+                configuration,
+            )?;
 
             write!(output, "{formatted}")?;
         }
@@ -236,6 +244,7 @@ pub fn format(
     language: &Language,
     grammar: &tree_sitter_facade::Language,
     format_configuration: FormatConfiguration,
+    configuration: &Configuration,
 ) -> FormatterResult<String> {
     let FormatConfiguration {
         skip_idempotence,
@@ -246,6 +255,23 @@ pub fn format(
     log::info!("Apply Tree-sitter query");
 
     let (tree, grammar) = parse(input, grammar, tolerate_parsing_errors)?;
+
+    let injections = tree_sitter::apply_injection_query(&input, query, &tree, false)?;
+
+    for (range, lang) in &injections {
+        let input = input[range.start as usize..range.end as usize].to_owned();
+        let formatted = format(
+            &input,
+            query,
+            language,
+            grammar,
+            format_configuration,
+            configuration,
+        );
+        todo!()
+    }
+
+    println!("ERIN: {:#?}", injections);
 
     let mut atoms = tree_sitter::apply_query(&input, query, &tree, grammar, false)?;
 
@@ -262,7 +288,14 @@ pub fn format(
     let trimmed = trim_whitespace(&rendered);
 
     if !skip_idempotence {
-        idempotence_check(&trimmed, query, language, grammar, tolerate_parsing_errors)?;
+        idempotence_check(
+            &trimmed,
+            query,
+            language,
+            grammar,
+            tolerate_parsing_errors,
+            configuration,
+        )?;
     }
 
     Ok(trimmed)
@@ -297,6 +330,7 @@ fn idempotence_check(
     language: &Language,
     grammar: &tree_sitter_facade::Language,
     tolerate_parsing_errors: bool,
+    configuration: &Configuration,
 ) -> FormatterResult<()> {
     log::info!("Checking for idempotence ...");
 
@@ -313,6 +347,7 @@ fn idempotence_check(
             skip_idempotence: true,
             tolerate_parsing_errors,
         }),
+        configuration,
     ) {
         Ok(()) => {
             let reformatted = String::from_utf8(output.into_inner()?)?;
@@ -364,6 +399,7 @@ mod tests {
                 skip_idempotence: true,
                 tolerate_parsing_errors: false,
             }),
+            &configuration,
         ) {
             Err(FormatterError::Parsing {
                 start_line: 1,
@@ -399,6 +435,7 @@ mod tests {
                 skip_idempotence: true,
                 tolerate_parsing_errors: true,
             }),
+            &configuration,
         )
         .unwrap();
 

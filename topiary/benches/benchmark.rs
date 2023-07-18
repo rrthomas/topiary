@@ -26,6 +26,7 @@ async fn format() {
             skip_idempotence: true,
             tolerate_parsing_errors: false,
         }),
+        &configuration,
     )
     .unwrap();
 }

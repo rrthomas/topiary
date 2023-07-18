@@ -47,7 +47,7 @@ impl Language {
     }
 
     /// Convenience alias to return the query file path for the Language.
-    pub fn query_file(&self) -> FormatterResult<PathBuf> {
+    pub fn query_files(&self) -> FormatterResult<(PathBuf, Option<PathBuf>)> {
         self.try_into()
     }
 
@@ -115,7 +115,7 @@ impl Language {
 ///
 /// Note that different languages may map to the same query file, because their grammars produce
 /// similar trees, which can be formatted with the same queries.
-impl TryFrom<&Language> for PathBuf {
+impl TryFrom<&Language> for (PathBuf, Option<PathBuf>) {
     type Error = FormatterError;
 
     fn try_from(language: &Language) -> FormatterResult<Self> {
@@ -132,16 +132,17 @@ impl TryFrom<&Language> for PathBuf {
         });
 
         #[rustfmt::skip]
-        let potentials: [Option<Self>; 4] = [
-            std::env::var("TOPIARY_LANGUAGE_DIR").map(Self::from).ok(),
-            option_env!("TOPIARY_LANGUAGE_DIR").map(Self::from),
-            Some(Self::from("./languages")),
-            Some(Self::from("../languages")),
+        let potentials: [Option<PathBuf>; 4] = [
+            std::env::var("TOPIARY_LANGUAGE_DIR").map(PathBuf::from).ok(),
+            option_env!("TOPIARY_LANGUAGE_DIR").map(PathBuf::from),
+            Some(PathBuf::from("./languages")),
+            Some(PathBuf::from("../languages")),
         ];
 
-        potentials
-            .into_iter()
-            .flatten()
+        let potential_dirs = potentials.into_iter().flatten();
+
+        let formatting = potential_dirs
+            .clone()
             .map(|path| path.join(format!("{basename}/formatting.scm")))
             .find(|path| path.exists())
             .ok_or_else(|| {
@@ -149,7 +150,13 @@ impl TryFrom<&Language> for PathBuf {
                     "Language query file could not be found".into(),
                     io::Error::from(io::ErrorKind::NotFound),
                 ))
-            })
+            })?;
+
+        let injections = potential_dirs
+            .map(|path| path.join(format!("{basename}/injections.scm")))
+            .find(|path| path.exists());
+
+        Ok((formatting, injections))
     }
 }
 
