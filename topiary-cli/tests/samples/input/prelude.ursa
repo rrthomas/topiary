@@ -1,0 +1,42 @@
+// Ursa prelude.
+// © Reuben Thomas 2023-2024
+// Released under the MIT license.
+
+use js.Math
+use js.JSON
+use js.process
+use js.RegExp
+use js.document
+use js.console
+use js.setTimeout
+
+{
+  // Basic facilities
+  print = console.log
+
+  // Various JavaScript facilities
+  JSON = JSON
+  RegExp = RegExp
+  process = process
+  document = document
+  setTimeout = setTimeout
+
+  // Maths
+  pi = Math.PI
+  sqrt = Math.sqrt
+  exp = Math.exp
+  log = Math.log
+  sin = Math.sin
+  cos = Math.cos
+  tan = Math.tan
+
+  // Range iterator
+  range = gen(n) {
+    var i = 0
+    loop {
+      if i == n { return null }
+      yield i
+      i := i + 1
+    }
+  }
+}

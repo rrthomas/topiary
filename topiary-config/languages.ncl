@@ -98,5 +98,14 @@
         rev = "a0ccc351e5e868ec1f8135e97aa3b53c663cf2df",
       },
     },
+
+    ursa = {
+      extensions = ["ursa"],
+      indent = "    ", # 4 spaces
+      grammar = {
+        git = "https://github.com/ursalang/tree-sitter-ursa",
+        rev = "d023d044590d461bf586c56854b2630fef0d17cc",
+      },
+    },
   },
 }

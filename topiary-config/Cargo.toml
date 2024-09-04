@@ -33,6 +33,7 @@ topiary-web-tree-sitter-sys.workspace = true
 # tree-sitter-query = { workspace = true, optional = true }
 # tree-sitter-ocaml = { workspace = true, optional = true }
 # tree-sitter-ocamllex = { workspace = true, optional = true }
+# tree-sitter-ursa = { workspace = true, optional = true }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 clap = { workspace = true, features = ["derive"] }
@@ -51,6 +52,7 @@ ocamllex = []
 rust = []
 toml = []
 tree_sitter_query = []
+ursa = []
 
 # This a convenience for the sake of downstream applications which don't
 # wish to cherry-pick grammars (e.g., the playground)
@@ -64,5 +66,6 @@ all = [
   "ocamllex",
   "rust",
   "toml",
-  "tree_sitter_query"
+  "tree_sitter_query",
+  "ursa"
 ]

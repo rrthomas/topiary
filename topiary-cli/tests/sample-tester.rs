@@ -69,6 +69,9 @@ fn input_output_tester() {
 
     #[cfg(feature = "tree_sitter_query")]
     io_test("tree_sitter_query.scm");
+
+    #[cfg(feature = "ursa")]
+    io_test("prelude.ursa");
 }
 
 // Test that our query files are properly formatted

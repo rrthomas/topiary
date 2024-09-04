@@ -102,6 +102,7 @@ external contributors. They are built in, by default, so are exposed in
 the same way as supported languages.
 
 * [CSS] by @lavigneer
+* [Ursa] by @rrthomas
 
 #### Experimental
 
@@ -1358,3 +1359,4 @@ of choice open in another.
 [tree-sitter-query]: https://tree-sitter.github.io/tree-sitter/using-parsers#pattern-matching-with-queries
 [tree-sitter]: https://tree-sitter.github.io/tree-sitter
 [treefmt]: https://github.com/numtide/treefmt
+[ursa]: https://github.com/ursalang/ursa

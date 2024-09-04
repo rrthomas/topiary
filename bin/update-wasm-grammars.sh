@@ -137,7 +137,19 @@ css() {
   echo -e "${GREEN}CSS: Done${NC}"
 }
 
+ursa() {
+  echo -e "${BLUE}Ursa: Fetching${NC}"
+  git clone https://github.com/ursalang/tree-sitter-ursa.git "${WORKDIR}/tree-sitter-ursa" &> /dev/null
+  REV=$(ref_for_language "ursa")
+  pushd "${WORKDIR}/tree-sitter-ursa" &> /dev/null
+    git checkout "$REV" &> /dev/null
+  popd &> /dev/null
+  echo -e "${ORANGE}Ursa: Building${NC}"
+  tree-sitter build --wasm "${WORKDIR}/tree-sitter-ursa"
+  echo -e "${GREEN}Ursa: Done${NC}"
+}
 
-(trap 'kill 0' SIGINT; json & nickel & ocaml & ocamllex & bash & rust & toml & tree-sitter-query & css & wait)
+
+(trap 'kill 0' SIGINT; json & nickel & ocaml & ocamllex & bash & rust & toml & tree-sitter-query & css & ursa & wait)
 
 echo -e "${GREEN}Done! All grammars have been updated${NC}"

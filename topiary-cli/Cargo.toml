@@ -51,6 +51,7 @@ topiary-tree-sitter-facade = { workspace = true }
 # tree-sitter-query = { workspace = true, optional = true }
 # tree-sitter-ocaml = { workspace = true, optional = true }
 # tree-sitter-ocamllex = { workspace = true, optional = true }
+# tree-sitter-ursa = { workspace = true, optional = true }
 
 [dev-dependencies]
 assert_cmd = { workspace = true }
@@ -70,7 +71,8 @@ default = [
 
 # Included by default
 contributed = [
-  "css"
+  "css",
+  "ursa",
 ]
 
 # Excluded by default
@@ -89,3 +91,4 @@ ocamllex = ["topiary-config/ocamllex", "topiary-queries/ocamllex"]
 rust = ["topiary-config/rust", "topiary-queries/rust"]
 toml = ["topiary-config/toml", "topiary-queries/toml"]
 tree_sitter_query = ["topiary-config/tree_sitter_query", "topiary-queries/tree_sitter_query"]
+ursa = ["topiary-config/ursa", "topiary-queries/ursa"]
