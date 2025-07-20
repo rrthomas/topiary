@@ -104,7 +104,7 @@
       indent = "    ", # 4 spaces
       grammar = {
         git = "https://github.com/ursalang/tree-sitter-ursa",
-        rev = "d023d044590d461bf586c56854b2630fef0d17cc",
+        rev = "2fc58a4398dafdfb8b79cd72afeff6f35a8ac9b5",
       },
     },
   },
